@@ -2,795 +2,218 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="robots" content="index, follow">
-<meta name="author" content="PulsoMX">
-<title>Pulso Play | Videos IA</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis IA de Partidos</title>
 <style>
-    :root {
-        --rojo: #c0152a;
-        --rojo-oscuro: #8b0f1e;
-        --amarillo: #f5b800;
-        --amarillo-brillante: #ffea00;
-        --cine: #0b0b0f;
-        --cine-2: #141419;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overscroll-behavior: none; }
-    body {
-        font-family: 'Source Sans 3', sans-serif;
-        background: var(--cine);
-        color: #fff;
-        overflow: hidden;
-    }
-
-    .top-bar {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: max(14px, env(safe-area-inset-top)) 16px 30px;
-        background: linear-gradient(rgba(0,0,0,.65), transparent);
-        pointer-events: none;
-    }
-    .top-bar a, .top-bar button { pointer-events: auto; }
-    .logo {
-        font-family: 'Playfair Display', serif; font-weight: 900;
-        font-size: 1.15rem; color: #fff; text-decoration: none;
-        display: flex; align-items: center; gap: 6px; white-space: nowrap;
-        text-shadow: 0 2px 8px rgba(0,0,0,.5);
-    }
-    .logo .play-tick { color: var(--amarillo); }
-    .logo span.mx { color: var(--rojo); -webkit-text-stroke: 0.4px #fff; }
-    .icon-btn {
-        background: rgba(20,20,25,.55); border: 1px solid rgba(255,255,255,.15);
-        color: #fff; width: 38px; height: 38px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.95rem; backdrop-filter: blur(6px); cursor: pointer;
-        transition: transform .15s ease, background .15s ease;
-    }
-    .icon-btn:active { transform: scale(0.9); }
-
-    #feed {
-        height: 100dvh; width: 100%;
-        overflow-y: scroll; scroll-snap-type: y mandatory;
-        scrollbar-width: none;
-    }
-    #feed::-webkit-scrollbar { display: none; }
-
-    .slide {
-        position: relative; height: 100dvh; width: 100%;
-        scroll-snap-align: start; scroll-snap-stop: always;
-        display: flex; align-items: center; justify-content: center;
-        background: var(--cine-2); overflow: hidden;
-    }
-    .slide video {
-        width: 100%; height: 100%; object-fit: cover;
-        background: #000;
-    }
-
-    .slide .scrim {
-        position: absolute; inset: 0; pointer-events: none;
-        background:
-            linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.35) 28%, transparent 55%),
-            linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 22%);
-    }
-
-    .progreso-track {
-        position: absolute; top: max(8px, env(safe-area-inset-top));
-        left: 12px; right: 12px; height: 3px; border-radius: 3px;
-        background: rgba(255,255,255,.25); overflow: hidden; z-index: 40;
-    }
-    .progreso-fill {
-        height: 100%; width: 0%; border-radius: 3px;
-        background: linear-gradient(90deg, var(--amarillo), var(--amarillo-brillante));
-        box-shadow: 0 0 8px rgba(245,184,0,.7);
-        transition: width .12s linear;
-    }
-
-    .info-pelicula {
-        position: absolute; left: 18px; right: 84px; bottom: max(26px, env(safe-area-inset-bottom));
-        z-index: 30;
-        pointer-events: none; /* Deja pasar el dedo hacia el video */
-    }
-    .tag-ia {
-        display: inline-flex; align-items: center; gap: 5px;
-        background: var(--rojo); color: #fff; font-size: 0.62rem; font-weight: 700;
-        letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px;
-        border-radius: 100px; margin-bottom: 10px;
-    }
-    .info-pelicula h2 {
-        font-family: 'Playfair Display', serif; font-weight: 900;
-        font-size: clamp(1.15rem, 4.5vw, 1.5rem); line-height: 1.2;
-        text-shadow: 0 2px 10px rgba(0,0,0,.6); margin-bottom: 6px;
-    }
-    .info-pelicula p {
-        font-size: 0.86rem; line-height: 1.4; color: rgba(255,255,255,.85);
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-        overflow: hidden; text-shadow: 0 1px 6px rgba(0,0,0,.5);
-    }
-
-    .riel-acciones {
-        position: absolute; right: 12px; bottom: max(30px, env(safe-area-inset-bottom));
-        z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 18px;
-        pointer-events: none; /* Deja pasar el dedo hacia el video */
-    }
-    .riel-acciones .icon-btn { width: 44px; height: 44px; font-size: 1.05rem; }
-    .nc-chip {
-        display: flex; flex-direction: column; align-items: center; gap: 2px;
-        color: var(--amarillo); font-weight: 800; font-size: 0.68rem; text-align: center;
-        text-shadow: 0 1px 4px rgba(0,0,0,.6);
-    }
-    .nc-chip i { font-size: 1.3rem; }
-
-    .nc-progreso-track {
-        width: 30px; height: 3px; border-radius: 3px; margin-top: 6px;
-        background: rgba(255,255,255,.25); overflow: hidden;
-    }
-    .nc-progreso-fill {
-        height: 100%; width: 0%; border-radius: 3px;
-        background: linear-gradient(90deg, var(--amarillo), var(--amarillo-brillante));
-        box-shadow: 0 0 6px rgba(245,184,0,.7);
-        transition: width .12s linear;
-    }
-
-    .nc-visto-msg {
-        display: none;
-        color: var(--rojo);
-        font-weight: 800;
-        font-size: 0.62rem;
-        line-height: 1.15;
-        text-align: center;
-        max-width: 68px;
-        margin-top: 6px;
-        text-shadow: 0 1px 4px rgba(0,0,0,.6);
-    }
-    .slide[data-visto="true"] .nc-progreso-track { display: none; }
-    .slide[data-visto="true"] .nc-visto-msg { display: block; }
-
-    .toast-nc {
-        position: fixed; left: 50%; bottom: 14%; transform: translate(-50%, 20px);
-        background: linear-gradient(135deg, #1a1a2e, #0b0b0f);
-        border: 1px solid rgba(245,184,0,.5);
-        color: #fff; padding: 12px 22px; border-radius: 100px;
-        display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 0.92rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,.5); z-index: 200;
-        opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease;
-    }
-    .toast-nc.visible { opacity: 1; transform: translate(-50%, 0); }
-    .toast-nc i { color: var(--amarillo); font-size: 1.15rem; }
-    .toast-nc.error { border-color: rgba(239,68,68,.5); }
-    .toast-nc.error i { color: #ef4444; }
-
-    .hint-swipe {
-        position: absolute; left: 50%; bottom: max(70px, calc(env(safe-area-inset-bottom) + 60px));
-        transform: translateX(-50%); z-index: 30; text-align: center;
-        color: rgba(255,255,255,.85); font-size: 0.72rem; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .06em;
-        animation: flotar 1.8s ease-in-out infinite;
-        pointer-events: none;
-    }
-    .hint-swipe i { display: block; font-size: 1.1rem; margin-bottom: 4px; }
-    @keyframes flotar { 0%,100% { transform: translate(-50%, 0); opacity: .5; } 50% { transform: translate(-50%, -8px); opacity: 1; } }
-
-    .estado-pantalla {
-        position: fixed; inset: 0; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; gap: 14px; text-align: center;
-        padding: 24px; background: var(--cine); z-index: 60;
-    }
-    .estado-pantalla i.fa-spinner { font-size: 2rem; color: var(--amarillo); }
-    .estado-pantalla h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; }
-    .estado-pantalla p { color: rgba(255,255,255,.65); font-size: 0.88rem; max-width: 280px; }
-
-    /* ══ Slide de anuncio (Estilo Idéntico a Facebook Dark Mode) ══ */
-    .anuncio-slide { background: var(--cine-2); flex-direction: column; gap: 16px; padding: 20px; }
-    
-    .fb-ad-container {
-        width: min(92vw, 400px);
-        background: #242526; /* Fondo oscuro estilo FB */
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-        display: flex;
-        flex-direction: column;
-        z-index: 20;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        border: 1px solid rgba(255,255,255,0.08);
-    }
-    .fb-ad-header {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        gap: 10px;
-    }
-    .fb-ad-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #3A3B3C;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #E4E6EB;
-        font-size: 1.1rem;
-    }
-    .fb-ad-meta {
-        display: flex;
-        flex-direction: column;
-    }
-    .fb-ad-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: #E4E6EB;
-    }
-    .fb-ad-sponsored {
-        font-size: 13px;
-        color: #B0B3B8;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .fb-ad-content {
-        width: 100%;
-        background: #000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 250px;
-    }
-    .ad-native-slot {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .fb-ad-footer {
-        background: #242526;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid rgba(255,255,255,0.08);
-        cursor: pointer;
-    }
-    .fb-ad-footer-text {
-        font-size: 15px;
-        color: #B0B3B8;
-        font-weight: 500;
-    }
-    .fb-ad-cta {
-        background: #2374E1; /* Azul Facebook */
-        color: #fff;
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 14px;
-        transition: background 0.2s;
-    }
-    .fb-ad-cta:active { background: #1B5BB5; }
-
-    /* ══ Animación de Mano Deslizante ══ */
-    .hand-swipe-hint {
-        position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        z-index: 99; pointer-events: none;
-        display: flex; flex-direction: column; align-items: center; gap: 24px;
-        opacity: 0; transition: opacity .4s cubic-bezier(.23,.1,.32,1.2);
-    }
-    .hand-swipe-hint.visible { opacity: 1; }
-
-    .hand-icon-swipe {
-        font-size: 4rem; color: rgba(255,255,255,.95);
-        filter: drop-shadow(0 6px 16px rgba(0,0,0,.7));
-        animation: swipe-up-hand 1.4s cubic-bezier(.34,.1,.68,.55) infinite;
-        transform-origin: center bottom;
-    }
-    @keyframes swipe-up-hand {
-        0% { transform: translateY(20px) scaleY(.75); opacity: .5; }
-        50% { transform: translateY(-15px) scaleY(1); opacity: 1; }
-        100% { transform: translateY(20px) scaleY(.75); opacity: .5; }
-    }
-
-    .hand-text-swipe {
-        font-size: 1rem; font-weight: 700; letter-spacing: .1em;
-        color: rgba(255,255,255,.92); text-transform: uppercase;
-        text-shadow: 0 3px 12px rgba(0,0,0,.8);
-        animation: pulse-hand-text 1.4s cubic-bezier(.34,.1,.68,.55) infinite;
-    }
-    @keyframes pulse-hand-text {
-        0%, 100% { opacity: .65; transform: scale(.98); }
-        50% { opacity: 1; transform: scale(1.02); }
-    }
-
-    /* ══ Banner fijo debajo de la top-bar ══ */
-    .ad-banner-top {
-        position: fixed; left: 0; right: 0; top: max(58px, calc(env(safe-area-inset-top) + 44px));
-        z-index: 45; display: flex; justify-content: center;
-        pointer-events: auto;
-    }
+  :root {
+    --bg: #0b0f17; --panel: #121a26; --panel-2: #182233; --line: #243247;
+    --text: #e6ebf3; --muted: #8a97ab; --accent: #3dd68c;
+    --home: #4f8cff; --draw: #f0b43c; --away: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 1.4rem; margin: 0 0 20px; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: .85rem; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .row { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .row-3 { grid-template-columns: 1fr 1fr 1fr; } .row-2 { grid-template-columns: 1fr 1fr; } }
+  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+  input, button { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { background: var(--accent); color: #04140c; font-weight: 700; border: none; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  .status { font-size: .9rem; color: var(--muted); margin-top: 12px; min-height: 1.3em; }
+  .status.err { color: var(--away); }
+  .hidden { display: none; }
+  .matchup { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: center; flex-wrap: wrap; }
+  .matchup .team { flex: 1; min-width: 140px; font-size: 1.15rem; font-weight: 700; }
+  .vs { color: var(--muted); font-weight: 700; }
+  .probs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .prob { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; text-align: center; }
+  .prob .pct { font-size: 1.8rem; font-weight: 800; }
+  .prob .lbl { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .bar { height: 10px; border-radius: 6px; background: var(--line); overflow: hidden; display: flex; margin-top: 14px; }
+  .bar div { height: 100%; transition: width .4s; }
+  .stat-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  @media (min-width: 640px) { .stat-list { grid-template-columns: repeat(4, 1fr); } }
+  .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .stat .v { font-size: 1.1rem; font-weight: 700; }
+  .stat .k { font-size: .75rem; color: var(--muted); }
+  .scores { display: flex; flex-wrap: wrap; gap: 8px; }
+  .score { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-width: 90px; text-align: center; }
+  .score b { font-size: 1.1rem; }
+  .score small { display: block; color: var(--muted); }
+  ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 4px 0; }
+  .analysis p { margin: 8px 0; }
+  h3 { font-size: .85rem; color: var(--muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .06em; }
+  a { color: var(--accent); }
+  .pill { display: inline-block; font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); margin: 2px 4px 2px 0; }
+  .disclaimer { font-size: .8rem; color: var(--muted); margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <h1>Análisis <span>IA</span> de partidos</h1>
 
-    <div class="top-bar">
-        <a id="link-inicio" href="index.html" class="logo">
-            <span class="play-tick">▶</span> PULSO <span class="mx">PLAY</span>
-        </a>
-        <button id="btn-mute" class="icon-btn" aria-label="Activar sonido">
-            <i class="fa-solid fa-volume-xmark"></i>
-        </button>
+  <section class="card">
+    <h2>Enfrentamiento</h2>
+    <div class="row row-3">
+      <div><label>Equipo local</label><input id="home" placeholder="Ej. Arsenal"></div>
+      <div><label>Equipo visitante</label><input id="away" placeholder="Ej. Chelsea"></div>
+      <div style="display:flex;align-items:flex-end"><button id="go">Analizar</button></div>
+    </div>
+    <div class="row row-2" style="margin-top:12px">
+      <div><label>Liga (contexto para la búsqueda)</label><input id="league" value="Premier League"></div>
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <div id="results" class="hidden">
+    <section class="card">
+      <h2>Probabilidades</h2>
+      <div class="matchup">
+        <div class="team" id="hName"></div><div class="vs">VS</div><div class="team" id="aName"></div>
+      </div>
+      <div class="probs">
+        <div class="prob"><div class="pct" style="color:var(--home)" id="pH"></div><div class="lbl">Gana local</div></div>
+        <div class="prob"><div class="pct" style="color:var(--draw)" id="pD"></div><div class="lbl">Empate</div></div>
+        <div class="prob"><div class="pct" style="color:var(--away)" id="pA"></div><div class="lbl">Gana visitante</div></div>
+      </div>
+      <div class="bar">
+        <div id="bH" style="background:var(--home);width:0"></div>
+        <div id="bD" style="background:var(--draw);width:0"></div>
+        <div id="bA" style="background:var(--away);width:0"></div>
+      </div>
+      <div class="stat-list">
+        <div class="stat"><div class="v" id="xgH"></div><div class="k">Goles esperados local</div></div>
+        <div class="stat"><div class="v" id="xgA"></div><div class="k">Goles esperados visitante</div></div>
+        <div class="stat"><div class="v" id="over"></div><div class="k">Más de 2.5 goles</div></div>
+        <div class="stat"><div class="v" id="btts"></div><div class="k">Ambos anotan</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Marcadores más probables</h2>
+      <div class="scores" id="scores"></div>
+    </section>
+
+    <section class="card">
+      <h2>Análisis</h2>
+      <div class="analysis" id="analysis"></div>
+    </section>
+
+    <div class="row row-2">
+      <section class="card"><h2>Forma reciente</h2><div id="formH"></div><div id="formA" style="margin-top:12px"></div></section>
+      <section class="card"><h2>Lesiones y bajas</h2><div id="injuries"></div></section>
     </div>
 
-    <div id="estado-cargando" class="estado-pantalla">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Cargando videos...</p>
+    <section class="card">
+      <h2>Próximo enfrentamiento</h2>
+      <div id="next"></div>
+    </section>
+
+    <section class="card">
+      <h2>Fuentes consultadas</h2>
+      <ul id="sources"></ul>
+    </section>
+
+    <div class="disclaimer">
+      Análisis generado por IA con fines informativos. Las probabilidades son estimaciones y no garantizan resultados.
+      No es asesoría de apuestas. Apuesta con responsabilidad.
     </div>
-
-    <div id="estado-vacio" class="estado-pantalla" style="display:none;">
-        <i class="fa-solid fa-clapperboard" style="font-size:2.2rem;color:var(--amarillo);"></i>
-        <h3>Ya viste todo por ahora</h3>
-        <p>No hay mas videos nuevos para ti en este momento. Vuelve más tarde por más contenido.</p>
-    </div>
-
-    <div id="estado-error" class="estado-pantalla" style="display:none;">
-        <i class="fa-solid fa-triangle-exclamation" style="font-size:2.2rem;color:#ef4444;"></i>
-        <h3>No se pudo cargar</h3>
-        <p>Revisa tu conexión e intenta de nuevo.</p>
-    </div>
-
-    <div class="ad-banner-top" id="ad-slot-banner-top"></div>
-
-    <div id="feed" style="display:none;"></div>
-
-    <!-- Hand Swipe Animation -->
-    <div id="hand-swipe-hint" class="hand-swipe-hint">
-        <div class="hand-icon-swipe">
-            <i class="fas fa-hand-paper"></i>
-        </div>
-        <div class="hand-text-swipe">Desliza para ver más videos</div>
-    </div>
-
-    <div id="toast-nc" class="toast-nc">
-        <i class="fa-solid fa-coins"></i>
-        <span id="toast-nc-texto">+40 NetCoins</span>
-    </div>
+  </div>
+</div>
 
 <script>
-    const EDGE_BASE = 'https://meiwuluwrdjszxeyoqtt.supabase.co/functions/v1';
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('uid');
+// Pega aquí la URL de tu Edge Function de Supabase
+const WORKER_URL = "https://mcrqjbbcjalyrmsvzogl.supabase.co/functions/v1/analyze";
 
-    if (userId) {
-        document.getElementById('link-inicio').href = `index.html?uid=${userId}`;
-    }
+const $ = id => document.getElementById(id);
 
-    let audioActivado = false;
-    const btnMute = document.getElementById('btn-mute');
-    btnMute.addEventListener('click', () => {
-        audioActivado = !audioActivado;
-        btnMute.innerHTML = audioActivado
-            ? '<i class="fa-solid fa-volume-high"></i>'
-            : '<i class="fa-solid fa-volume-xmark"></i>';
-        document.querySelectorAll('#feed video').forEach(v => v.muted = !audioActivado);
+$("go").addEventListener("click", analyze);
+["home", "away"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter") analyze(); }));
+
+function setStatus(msg, err = false) {
+  $("status").textContent = msg;
+  $("status").className = "status" + (err ? " err" : "");
+}
+
+const pct = n => (Number(n) || 0).toFixed(1) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pill = r => `<span class="pill" style="color:${r === "W" ? "var(--accent)" : r === "L" ? "var(--away)" : "var(--draw)"}">${esc(r)}</span>`;
+
+async function analyze() {
+  const home = $("home").value.trim();
+  const away = $("away").value.trim();
+  const league = $("league").value.trim() || "liga de fútbol";
+  if (!home || !away) return setStatus("Escribe los dos equipos.", true);
+  if (home.toLowerCase() === away.toLowerCase()) return setStatus("Elige dos equipos distintos.", true);
+
+  $("go").disabled = true;
+  $("results").classList.add("hidden");
+  setStatus("Buscando información actual y analizando... (20-60 segundos)");
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ home, away, league })
     });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || `Error ${res.status}`);
+    render(r);
+    setStatus("Análisis completado.");
+  } catch (e) {
+    setStatus(e.message, true);
+  } finally {
+    $("go").disabled = false;
+  }
+}
 
-    function obtenerNoticiasVideoPlaceholder() {
-        return [];
-    }
+function render(r) {
+  $("results").classList.remove("hidden");
+  $("hName").textContent = r.local;
+  $("aName").textContent = r.visitante;
 
-    const SANDBOX_ADS = 'allow-popups allow-scripts allow-same-origin allow-popups-to-escape-sandbox allow-forms';
+  const p = r.prob || {};
+  $("pH").textContent = pct(p.local);
+  $("pD").textContent = pct(p.empate);
+  $("pA").textContent = pct(p.visitante);
+  $("bH").style.width = (p.local || 0) + "%";
+  $("bD").style.width = (p.empate || 0) + "%";
+  $("bA").style.width = (p.visitante || 0) + "%";
 
-    function crearIframeAd(srcdocHtml, cssTexto) {
-        const ifr = document.createElement('iframe');
-        ifr.title = 'Publicidad';
-        ifr.setAttribute('sandbox', SANDBOX_ADS);
-        ifr.setAttribute('frameborder', '0');
-        ifr.setAttribute('scrolling', 'no');
-        ifr.style.cssText = cssTexto;
-        ifr.srcdoc = srcdocHtml;
-        return ifr;
-    }
+  $("xgH").textContent = Number(r.xg?.local ?? 0).toFixed(2);
+  $("xgA").textContent = Number(r.xg?.visitante ?? 0).toFixed(2);
+  $("over").textContent = pct(r.mas_de_2_5);
+  $("btts").textContent = pct(r.ambos_anotan);
 
-    function refrescarBannerYSocialBar() {
-        const slotBanner = document.getElementById('ad-slot-banner-top');
-        if (slotBanner) {
-            slotBanner.innerHTML = ''; // destruye el iframe viejo (fuerza una impresión nueva de verdad)
-            slotBanner.appendChild(crearIframeAd(
-                `<html><body style='margin:0;overflow:hidden;'><script>atOptions = {'key':'d81fb80d3a74926f5784b40947a9ab68','format':'iframe','height':50,'width':320,'params':{}};<\/script><script src='https://www.highperformanceformat.com/d81fb80d3a74926f5784b40947a9ab68/invoke.js'><\/script></body></html>`,
-                'width:320px;height:50px;max-width:100%;border:none;'
-            ));
-        }
-    }
+  $("scores").innerHTML = (r.marcadores || []).map(s =>
+    `<div class="score"><b>${esc(s.h)} - ${esc(s.a)}</b><small>${pct(s.p)}</small></div>`).join("");
 
-    function refrescarAnunciosNativos() {
-        // Refrescar TODOS los anuncios nativos que ya fueron inyectados
-        document.querySelectorAll('.slide[data-anuncio-inyectado="true"]').forEach(slide => {
-            const adSlot = slide.querySelector('.ad-native-slot');
-            if (adSlot) {
-                adSlot.innerHTML = '';
-                adSlot.appendChild(crearIframeAd(
-                    `<html><body style='margin:0;display:flex;justify-content:center;align-items:center;'><div id='container-c242865b5697b34c2e6ac92e118e339e'></div><script async='async' data-cfasync='false' src='https://pl30307316.effectivecpmnetwork.com/c242865b5697b34c2e6ac92e118e339e/invoke.js'><\/script></body></html>`,
-                    'width:100%;height:250px;border:none;'
-                ));
-            }
-        });
-    }
+  $("analysis").innerHTML = (r.analisis || []).map(t => `<p>${esc(t)}</p>`).join("") +
+    `<h3>Factores clave</h3><ul>${(r.factores_clave || []).map(f => `<li>${esc(f)}</li>`).join("")}</ul>`;
 
-    function construirFeedMezclado(peliculas) {
-        const noticias = obtenerNoticiasVideoPlaceholder();
-        const items = peliculas.map(p => ({ ...p, tipo: 'pelicula' }));
+  const f = r.forma || {};
+  $("formH").innerHTML = `<div class="muted">${esc(r.local)}</div><div>${(f.local || []).map(pill).join("")}</div><div class="muted">${esc(r.forma_detalle?.local || "")}</div>`;
+  $("formA").innerHTML = `<div class="muted">${esc(r.visitante)}</div><div>${(f.visitante || []).map(pill).join("")}</div><div class="muted">${esc(r.forma_detalle?.visitante || "")}</div>`;
 
-        const mezclado = [];
-        let iNoticia = 0;
-        let iAnuncio = 0;
-        items.forEach((item, i) => {
-            mezclado.push(item);
-            if ((i + 1) % 4 === 0) {
-                if (iNoticia < noticias.length) {
-                    mezclado.push({ ...noticias[iNoticia], tipo: 'noticia' });
-                    iNoticia++;
-                } else {
-                    mezclado.push({ tipo: 'anuncio', _adId: `ad-slot-native-${iAnuncio}` });
-                    iAnuncio++;
-                }
-            }
-        });
-        return mezclado;
-    }
+  const b = r.bajas || {};
+  const bajasList = (arr, name) => `<div class="muted" style="margin-top:8px">${esc(name)}</div><ul>${(arr && arr.length ? arr : ["Sin bajas confirmadas"]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  $("injuries").innerHTML = bajasList(b.local, r.local) + bajasList(b.visitante, r.visitante);
 
-    function crearSlide(item, index) {
-        const slide = document.createElement('div');
+  const n = r.proximo_partido || {};
+  $("next").innerHTML = n.fecha
+    ? `<div><b>${esc(r.local)} vs ${esc(r.visitante)}</b></div><div class="muted">${esc(n.fecha)} ${n.competicion ? "· " + esc(n.competicion) : ""}</div><div class="muted">${esc(n.nota || "")}</div>`
+    : `<span class="muted">${esc(n.nota || "No se encontró un próximo enfrentamiento confirmado.")}</span>`;
 
-        if (item.tipo === 'anuncio') {
-            slide.className = 'slide anuncio-slide';
-            slide.dataset.tipo = 'anuncio';
-            
-            // Recreamos la tarjeta publicitaria para que se vea idéntica a Facebook
-            slide.innerHTML = `
-                <div class="scrim"></div>
-                <div class="fb-ad-container">
-                    <div class="fb-ad-header">
-                        <div class="fb-ad-avatar"><i class="fa-solid fa-rectangle-ad"></i></div>
-                        <div class="fb-ad-meta">
-                            <span class="fb-ad-title">Patrocinado</span>
-                            <span class="fb-ad-sponsored">Sponsor <i class="fa-solid fa-earth-americas" style="font-size:0.75rem;"></i></span>
-                        </div>
-                    </div>
-                    <div class="fb-ad-content">
-                        <div id="${item._adId}" class="ad-native-slot"></div>
-                    </div>
-                    <div class="fb-ad-footer">
-                        <span class="fb-ad-footer-text">Ver más detalles</span>
-                        <div class="fb-ad-cta">Más información</div>
-                    </div>
-                </div>
-            `;
-            return slide;
-        }
-
-        slide.className = 'slide';
-        slide.dataset.index = index;
-        slide.dataset.id = item.id;
-        slide.dataset.duracion = item.duracion_segundos;
-        slide.dataset.nc = item.netcoins_recompensa;
-        slide.dataset.reclamado = 'false';
-        slide.dataset.visto = 'false';
-
-        slide.innerHTML = `
-            <video src="${item.video_url}" poster="${item.miniatura_url || ''}"
-                   playsinline muted preload="${index === 0 ? 'auto' : 'metadata'}"></video>
-            <div class="scrim"></div>
-            <div class="progreso-track"><div class="progreso-fill"></div></div>
-            <div class="info-pelicula">
-                <span class="tag-ia"><i class="fa-solid fa-wand-magic-sparkles"></i> ${item.tipo === 'noticia' ? 'Noticia' : 'Video IA'}</span>
-                <h2>${item.titulo}</h2>
-                <p>${item.descripcion || ''}</p>
-            </div>
-            <div class="riel-acciones">
-                <div class="nc-chip">
-                    <i class="fa-solid fa-coins"></i><span>+${item.netcoins_recompensa}</span>
-                    <div class="nc-progreso-track"><div class="nc-progreso-fill"></div></div>
-                    <span class="nc-visto-msg">Ya viste este Video</span>
-                </div>
-            </div>
-            ${index === 0 ? '<div class="hint-swipe"><i class="fa-solid fa-chevron-up"></i>Desliza</div>' : ''}
-        `;
-        return slide;
-    }
-
-    async function yaFueVista(peliculaId) {
-        if (!userId) return false;
-        try {
-            const res = await fetch(`${EDGE_BASE}/verificar-pelicula`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: userId, peliculaId })
-            });
-            const data = await res.json();
-            return !!data.ya_vista;
-        } catch (e) { 
-            console.error('Error verificando película:', e);
-            return false; 
-        }
-    }
-
-    function mostrarToast(texto, esError = false) {
-        const toast = document.getElementById('toast-nc');
-        const span = document.getElementById('toast-nc-texto');
-        span.textContent = texto;
-        toast.classList.toggle('error', esError);
-        toast.classList.add('visible');
-        clearTimeout(window._toastTimer);
-        window._toastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
-    }
-
-    let handHintActive = false;
-
-    function mostrarManoSwipe() {
-        const handHint = document.getElementById('hand-swipe-hint');
-        handHint.classList.add('visible');
-        handHintActive = true;
-    }
-
-    function ocultarManoSwipe() {
-        const handHint = document.getElementById('hand-swipe-hint');
-        handHint.classList.remove('visible');
-        handHintActive = false;
-    }
-
-    function setupHandSwipeListener() {
-        const feed = document.getElementById('feed');
-        let lastScrollPos = 0;
-
-        feed.addEventListener('scroll', () => {
-            if (!handHintActive) return;
-            
-            const currentScrollPos = feed.scrollTop;
-            if (Math.abs(currentScrollPos - lastScrollPos) > 3) {
-                ocultarManoSwipe();
-                lastScrollPos = currentScrollPos;
-            }
-        }, { passive: true });
-    }
-
-    async function reclamarRecompensa(slide) {
-        if (slide.dataset.reclamado === 'true') return;
-        slide.dataset.reclamado = 'true';
-
-        if (!userId) {
-            mostrarToast('Inicia sesión desde NetGamer para ganar NC', true);
-            return;
-        }
-
-        const peliculaId = slide.dataset.id;
-        if (!peliculaId) return;
-        
-        const yaVista = await yaFueVista(peliculaId);
-        if (yaVista) return;
-
-        try {
-            const res = await fetch(`${EDGE_BASE}/recompensar-pelicula`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: userId, peliculaId })
-            });
-            const data = await res.json();
-
-            if (res.ok && data.ok) {
-                mostrarToast(`+${data.nc} NetCoins acreditadas`);
-            } else {
-                const mensajes = {
-                    'ya_vista': null,
-                    'limite_diario': '¡Límite diario de Videos alcanzado!',
-                    'usuario_invalido': 'Usuario no reconocido',
-                    'pelicula_invalida': 'Este video ya no está disponible'
-                };
-                const msg = mensajes[data.error];
-                if (msg) mostrarToast(msg, true);
-            }
-        } catch (e) {
-            console.error('Error reclamando recompensa:', e);
-            mostrarToast('Error de red al acreditar NC', true);
-        }
-    }
-
-    function activarSlide(slide) {
-        // Los banners se cargan UNA SOLA VEZ al inicio y luego cada 40 segundos automáticamente
-        // NO se refrescan aquí para evitar problemas con Adsterra
-
-        if (slide.dataset.tipo === 'anuncio') {
-            // Si el slide al que bajamos es una tarjeta de Facebook, inyectamos el anuncio de Adsterra
-            // SOLO LA PRIMERA VEZ (cuando no tiene el flag de inyectado)
-            const adSlot = slide.querySelector('.ad-native-slot');
-            if (adSlot && !slide.dataset.anuncioInyectado) {
-                adSlot.innerHTML = '';
-                adSlot.appendChild(crearIframeAd(
-                    `<html><body style='margin:0;display:flex;justify-content:center;align-items:center;'><div id='container-c242865b5697b34c2e6ac92e118e339e'></div><script async='async' data-cfasync='false' src='https://pl30307316.effectivecpmnetwork.com/c242865b5697b34c2e6ac92e118e339e/invoke.js'><\/script></body></html>`,
-                    'width:100%;height:250px;border:none;'
-                ));
-                slide.dataset.anuncioInyectado = 'true'; // marcar como inyectado
-            }
-            return; 
-        }
-
-        const video = slide.querySelector('video');
-        const fill = slide.querySelector('.progreso-fill');
-        const ncFill = slide.querySelector('.nc-progreso-fill');
-        video.muted = !audioActivado;
-        video.currentTime = 0;
-        fill.style.width = '0%';
-        if (ncFill) ncFill.style.width = '0%';
-
-        const attemptPlay = () => {
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        slide.removeEventListener('click', attemptPlay);
-                        document.removeEventListener('touchstart', attemptPlay);
-                    })
-                    .catch(() => {
-                        slide.addEventListener('click', attemptPlay, { once: true });
-                        document.addEventListener('touchstart', attemptPlay, { once: true });
-                    });
-            }
-        };
-        attemptPlay();
-
-        video.ontimeupdate = () => {
-            if (!video.duration) return;
-            const pct = Math.min((video.currentTime / video.duration) * 100, 100);
-            fill.style.width = pct + '%';
-            if (ncFill) ncFill.style.width = pct + '%';
-            if (pct >= 99.5) reclamarRecompensa(slide);
-        };
-        video.onended = () => {
-            reclamarRecompensa(slide);
-            slide.dataset.visto = 'true';
-            video.currentTime = 0;
-            attemptPlay();
-            
-            // Mostrar mano solo si es el primer video
-            if (slide.dataset.index === '0') {
-                mostrarManoSwipe();
-            }
-        };
-    }
-
-    function desactivarSlide(slide) {
-        if (slide.dataset.tipo === 'anuncio') {
-            // Destruimos el anuncio cuando el usuario lo deja de ver para optimizar la memoria y obligarlo a cargar de nuevo.
-            const adSlot = slide.querySelector('.ad-native-slot');
-            if (adSlot) adSlot.innerHTML = '';
-            return;
-        }
-        const video = slide.querySelector('video');
-        video.pause();
-        video.ontimeupdate = null;
-        video.onended = null;
-    }
-
-    function iniciarObservador() {
-        const feed = document.getElementById('feed');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const slide = entry.target;
-                if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-                    activarSlide(slide);
-                    slide.querySelector('.hint-swipe')?.remove();
-                } else {
-                    desactivarSlide(slide);
-                }
-            });
-        }, { root: feed, threshold: [0, 0.6, 1] });
-
-        feed.querySelectorAll('.slide').forEach(slide => observer.observe(slide));
-    }
-
-    async function cargarFeed() {
-        try {
-            const qs = userId ? `?uid=${encodeURIComponent(userId)}` : '';
-            const res = await fetch(`${EDGE_BASE}/listar-peliculas${qs}`);
-            if (!res.ok) throw new Error('respuesta no ok');
-            const peliculas = await res.json();
-
-            document.getElementById('estado-cargando').style.display = 'none';
-
-            if (!Array.isArray(peliculas) || peliculas.length === 0) {
-                document.getElementById('estado-vacio').style.display = 'flex';
-                return;
-            }
-
-            const items = construirFeedMezclado(peliculas);
-            const feed = document.getElementById('feed');
-            items.forEach((item, i) => feed.appendChild(crearSlide(item, i)));
-            feed.style.display = 'block';
-
-            // Ya no invocamos insertarAnunciosNativos(); desde aquí porque 'activarSlide' 
-            // se encargará de inyectar y recargar la publicidad dinámicamente.
-            iniciarObservador();
-            setupHandSwipeListener();
-
-            // Cargar banners UNA SOLA VEZ al inicio
-            refrescarBannerYSocialBar();
-
-            // Luego refrescarlos automáticamente cada 40 segundos (sin hacer refresh en cada swipe)
-            setInterval(() => {
-                refrescarBannerYSocialBar();
-                refrescarAnunciosNativos(); // También refrescar los anuncios nativos
-            }, 40000);
-        } catch (e) {
-            console.error('Error cargando feed:', e);
-            document.getElementById('estado-cargando').style.display = 'none';
-            document.getElementById('estado-error').style.display = 'flex';
-        }
-    }
-
-    document.addEventListener('keydown', (e) => {
-        const feed = document.getElementById('feed');
-        if (e.key === 'ArrowDown') feed.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
-        if (e.key === 'ArrowUp') feed.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
-    });
-
-    cargarFeed();
+  $("sources").innerHTML = (r.fuentes || []).map(s =>
+    `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.titulo || s.url)}</a></li>`).join("") || `<li class="muted">Sin fuentes listadas</li>`;
+}
 </script>
-
-<!-- Forzar sandbox en iframes de anuncios inyectados dinámicamente (evita redirecciones) -->
-<script>
-(function() {
-    var AD_SANDBOX = 'allow-popups allow-scripts allow-same-origin allow-popups-to-escape-sandbox allow-forms';
-    var AD_DOMAINS = ['highperformanceformat.com', 'effectivecpmnetwork.com'];
-
-    function isAdIframe(iframe) {
-        var src = iframe.src || '';
-        return AD_DOMAINS.some(function(d) { return src.indexOf(d) !== -1; }) || !iframe.id || iframe.id.indexOf('iframe-') === -1;
-    }
-
-    function applySandbox(iframe) {
-        if (!iframe.hasAttribute('sandbox')) {
-            iframe.setAttribute('sandbox', AD_SANDBOX);
-        }
-    }
-
-    // Eliminar cualquier elemento tipo Social Bar / popunder que un anuncio intente inyectar
-    // directamente en el <body> principal (fuera del iframe sandboxeado), que es lo que
-    // suele causar redirecciones al entrar a la página.
-    function limpiarInyeccionesAdsterraEnBody() {
-        document.querySelectorAll(
-            'body > div[style*="position: fixed"], body > div[style*="position:fixed"],' +
-            'body > iframe[style*="position: fixed"], body > iframe[style*="position:fixed"],' +
-            'div[id*="social-bar"], div[class*="social-bar"],' +
-            'div[id*="socialbar"], div[class*="socialbar"],' +
-            'div[id*="aso-"], div[id*="adsterra"]'
-        ).forEach(function(el) {
-            // No tocar nuestros propios contenedores de anuncios
-            if (el.id === 'ad-slot-banner-top') return;
-            el.remove();
-        });
-    }
-
-    // Observar nodos nuevos agregados al documento principal
-    var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
-                if (node.nodeType !== 1) return;
-                if (node.tagName === 'IFRAME') applySandbox(node);
-                if (node.querySelectorAll) node.querySelectorAll('iframe').forEach(applySandbox);
-            });
-        });
-        limpiarInyeccionesAdsterraEnBody();
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // Aplicar a iframes ya existentes al cargar
-    window.addEventListener('load', function() {
-        document.querySelectorAll('iframe').forEach(applySandbox);
-        limpiarInyeccionesAdsterraEnBody();
-    });
-})();
-</script>
-
 </body>
 </html>
